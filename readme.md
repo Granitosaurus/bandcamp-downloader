@@ -1,9 +1,9 @@
-# Bandcamp Downloader
+# bandcamp-dl
 
 Simple minimal bandcamp downloader cli application:
 
 ```
-Usage: downloader.py [OPTIONS] URL
+Usage: bandcamp-dl [OPTIONS] URL
 
   Download tracks from bandcamp album url to `<cwd>/<album_name>/` directory
 
