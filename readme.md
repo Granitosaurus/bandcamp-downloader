@@ -13,7 +13,7 @@ Options:
 
 # install
 
-    pip install git+https://github.com/Granitosaurus/bandcamp-downloader
+    pip install git+https://github.com/Granitosaurus/bandcamp-downloader@v1.0
 
 # example
 
