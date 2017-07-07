@@ -1,15 +1,20 @@
 import json
 
 import click
-import re
 import requests
+import sys
 from click import echo
 from parsel import Selector
 import os
+import re
 
 
 def clean(text):
-    return text.lower().strip().replace(' ', '_')
+    text = text.replace(os.sep, '')
+    text = text.lower().strip().replace(' ', '_')
+    text = re.sub('_{2,}', '_', text)
+    text = text.replace('_-_', '-')
+    return text
 
 
 @click.command()
@@ -27,7 +32,11 @@ def cli(url):
         return 1
     album_path = os.path.join(os.getcwd(), album_name)
     echo('downloading album: {}\nto: {}'.format(album_name, album_path))
-    os.mkdir(album_path)
+    try:
+        os.mkdir(album_path)
+    except FileExistsError:
+        print('Error: Directory "{}" already exists'.format(album_path))
+        sys.exit()
     tracks = json.loads(re.findall('trackinfo: (\[.+\])', resp.text)[0])
     for track in tracks:
         url = 'http:{}'.format(track['file']['mp3-128'])
