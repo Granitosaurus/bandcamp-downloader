@@ -1,8 +1,8 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='bandcamp-downloader',
-    version='1.1',
+    version='1.11',
     packages=['bandcampdl'],
     url='',
     license='GPLv3',
