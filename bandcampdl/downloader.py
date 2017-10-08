@@ -39,7 +39,9 @@ def cli(url):
         sys.exit()
     tracks = json.loads(re.findall('trackinfo: (\[.+\])', resp.text)[0])
     for track in tracks:
-        url = 'http:{}'.format(track['file']['mp3-128'])
+        url = track['file']['mp3-128']
+        if not url.startswith('http'):
+            url = 'http:' + url
         name = '{}-{}.mp3'.format(artist, clean(track['title']))
         echo('downloading track: {}'.format(name))
         with open(os.path.join(album_path, name), 'wb') as f:
