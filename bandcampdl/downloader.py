@@ -42,7 +42,8 @@ def cli(url):
         url = track['file']['mp3-128']
         if not url.startswith('http'):
             url = 'http:' + url
-        name = '{}-{}.mp3'.format(artist, clean(track['title']))
+        track_num = clean(str(track['track_num']).zfill(2))
+        name = '{}-{}-{}.mp3'.format(track_num, artist, clean(track['title']))
         echo('downloading track: {}'.format(name))
         with open(os.path.join(album_path, name), 'wb') as f:
             f.write(requests.get(url).content)
