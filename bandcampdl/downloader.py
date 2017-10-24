@@ -39,6 +39,9 @@ def cli(url):
         sys.exit()
     tracks = json.loads(re.findall('trackinfo: (\[.+\])', resp.text)[0])
     for track in tracks:
+        if not track['file']:
+            echo('warning: skipping track "{}" - not available to download'.format(track['title']))
+            continue
         url = track['file']['mp3-128']
         if not url.startswith('http'):
             url = 'http:' + url

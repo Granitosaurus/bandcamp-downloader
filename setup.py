@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bandcamp-downloader',
-    version='1.12',
+    version='1.13',
     packages=['bandcampdl'],
     url='',
     license='GPLv3',
