@@ -11,6 +11,7 @@ setup(
         'click',
         'requests',
         'parsel',
+        'eyed3',
     ],
     entry_points="""
         [console_scripts]
