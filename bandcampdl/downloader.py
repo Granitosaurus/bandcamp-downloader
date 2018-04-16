@@ -7,6 +7,7 @@ from click import echo
 from parsel import Selector
 import os
 import re
+import eyed3
 
 
 def clean(text):
@@ -38,10 +39,12 @@ def cli(url):
         print('Error: Directory "{}" already exists'.format(album_path))
         sys.exit()
     tracks = json.loads(re.findall('trackinfo: (\[.+\])', resp.text)[0])
+    track_num = 0
     for track in tracks:
         if not track['file']:
             echo('warning: skipping track "{}" - not available to download'.format(track['title']))
             continue
+        track_num += 1
         url = track['file']['mp3-128']
         if not url.startswith('http'):
             url = 'http:' + url
@@ -49,6 +52,13 @@ def cli(url):
         echo('downloading track: {}'.format(name))
         with open(os.path.join(album_path, name), 'wb') as f:
             f.write(requests.get(url).content)
+        #set tags
+        song = eyed3.load(os.path.join(album_path, name))
+        song.tag.album = album_name
+        song.tag.artist = artist
+        song.tag.title = track['title']
+        song.tag.track_num = track_num
+        song.tag.save()
     cover = sel.css('#tralbumArt img::attr(src)').extract_first()
     if cover:
         echo('downloading cover.jpg')
