@@ -30,7 +30,6 @@ def download(url, path):
                 f.write(chunk)
                 bar.update(len(chunk))
 
-
 @click.command()
 @click.argument('url')
 @click.option('--force/--no-force', default=False)
@@ -46,6 +45,16 @@ def cli(url, force, dry_run):
     do_force = force
 
     resp = requests.get(url)
+
+    #TODO full discography
+    if 'bandcamp.com/album/' in url:
+        download_album(resp)
+    elif 'bandcamp.com/track/' in url:
+        download_track(resp)
+    else:
+        raise Exception("Unsupported URL")
+
+def download_album(resp):
     sel = Selector(text=resp.text)
     album_name = clean(sel.xpath('//h2[@itemprop="name"]/text()').extract_first(''))
     artist = clean(sel.xpath('//span[@itemprop="byArtist"]/a/text()').extract_first(''))
@@ -85,6 +94,38 @@ Downloading album {album} ({year}) by {artist}
     if cover:
         echo('downloading cover.jpg')
         download(cover, os.path.join(album_path, 'cover.jpg'))
+
+def download_track(resp):
+    sel = Selector(text=resp.text)
+    track_name = clean(sel.xpath('//h2[@itemprop="name"]/text()').extract_first(''))
+    artist = clean(sel.xpath('//span[@itemprop="byArtist"]/a/text()').extract_first(''))
+    tralbum_data = json.loads(next(re.finditer('current: (.+),', resp.text)).group(1))
+    release_date = datetime.strptime(tralbum_data['release_date'], '%d %b %Y %H:%M:%S %Z')
+    tags = map(clean, sel.xpath('//div[has-class("tralbumData", "tralbum-tags")]/a[has-class("tag") and @itemprop="keywords"]/text()').extract())
+    artist_path = os.path.join(os.getcwd(), artist)
+    echo("""\
+Downloading track {track} ({year}) by {artist}
+  to: {path}
+(tags: {tags})
+""".format(artist=artist, year=release_date.year, track=track_name, path=artist_path, tags=', '.join(tags)))
+    try:
+        if not do_dry_run:
+            os.makedirs(artist_path)
+    except FileExistsError:
+        pass
+    tracks = json.loads(next(re.finditer('trackinfo: (\[.+\])', resp.text)).group(1))
+    track = tracks[0]
+    url = track['file']['mp3-128']
+    if not url.startswith('http'):
+        url = 'http:' + url
+    name = '{} - {}'.format(release_date.strftime("%Y-%m-%d"), clean(track['title']))
+    echo('downloading track {}'.format(name))
+    download(url, os.path.join(artist_path, name + '.mp3'))
+
+    cover = sel.css('#tralbumArt img::attr(src)').extract_first()
+    if cover:
+        echo('downloading cover.jpg')
+        download(cover, os.path.join(artist_path, name + '-cover.jpg'))
 
 if __name__ == '__main__':
     cli()
