@@ -56,10 +56,16 @@ def cli(url, force, dry_run):
 
 def download_album(resp):
     sel = Selector(text=resp.text)
-    album_name = clean(sel.xpath('//h2[@itemprop="name"]/text()').extract_first(''))
-    artist = clean(sel.xpath('//span[@itemprop="byArtist"]/a/text()').extract_first(''))
-    album_date = datetime.strptime(next(re.finditer('album_release_date: "(.+)"', resp.text)).group(1), '%d %b %Y %H:%M:%S %Z')
-    tags = map(clean, sel.xpath('//div[has-class("tralbumData", "tralbum-tags")]/a[has-class("tag") and @itemprop="keywords"]/text()').extract())
+    #metadata = json.loads(sel.xpath('/html/head/script[@type="application/ld+json"]/text()').extract_first(''))
+    tracks = json.loads(clean(sel.xpath('/html/head/script/@data-tralbum').extract_first()))
+
+    assert tracks['current']['type'] == 'album'
+
+    artist = tracks['artist']
+    album_name = tracks['current']['title']
+    album_date = datetime.strptime(tracks['album_release_date'], '%d %b %Y %H:%M:%S %Z')
+
+    tags = map(clean, sel.xpath('//div[has-class("tralbumData", "tralbum-tags")]/a[has-class("tag")]/text()').extract())
     if not album_name:
         echo('No album found on: {}'.format(resp.url), err=True)
         return 1
@@ -78,19 +84,17 @@ Downloading album {album} ({year}) by {artist}
         else:
             echo('Error: Directory "{}" already exists. Use --force to continue.'.format(album_path), err=True)
             sys.exit(1)
-    tracks = json.loads(next(re.finditer('trackinfo: (\[.+\])', resp.text)).group(1))
-    for i, track in enumerate(tracks):
+
+    for i, track in enumerate(tracks['trackinfo']):
         if not track['file']:
             echo('warning: skipping track "{}" - not available to download'.format(track['title']))
             continue
-        url = track['file']['mp3-128']
-        if not url.startswith('http'):
-            url = 'http:' + url
+        url = track['file']['mp3-128'].replace('-', '/').replace('mp3/128', 'mp3-128') # probable bug parsel decode json in node attribute
         name = '{:02} - {}.mp3'.format(track["track_num"], clean(track['title']))
         echo('downloading track {}/{}: {}'.format(i+1, len(tracks), name))
         download(url, os.path.join(album_path, name))
 
-    cover = sel.css('#tralbumArt img::attr(src)').extract_first()
+    cover = sel.xpath('//*[@id="tralbumArt"]/a/@href').extract_first()
     if cover:
         echo('downloading cover.jpg')
         download(cover, os.path.join(album_path, 'cover.jpg'))
